@@ -2,16 +2,21 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
+st.title("Airbnb Listings Dashboard")
+
 # Load data
-df = pd.read_csv("cleaned_file.csv")
+file_id = "1lBYjeUP4yzAhEed0efY2I50KFnpkRkiR"
+url = f"https://drive.google.com/uc?id={file_id}"
+df = pd.read_csv(url)
+
+# Clean price column
+df['price_clean'] = df['price'].str.replace("[$,]", "", regex=True).astype(float)
 
 # Sidebar filters
 neighborhood = st.sidebar.selectbox("Select Neighborhood", df['neighbourhood_cleansed'].dropna().unique())
 room_type = st.sidebar.selectbox("Select Room Type", df['room_type'].dropna().unique())
 price_range = st.sidebar.slider("Price Range", 0, int(df['price'].str.replace("[$,]", "", regex=True).astype(float).max()), (50, 300))
 
-# Clean price column
-df['price_clean'] = df['price'].str.replace("[$,]", "", regex=True).astype(float)
 
 # Filtered data
 filtered = df[
