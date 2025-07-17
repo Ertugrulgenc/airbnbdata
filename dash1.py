@@ -6,7 +6,7 @@ st.title("Airbnb Listings Dashboard")
 
 # Load data
 file_id = "1lBYjeUP4yzAhEed0efY2I50KFnpkRkiR"
-url = f"https://drive.google.com/uc?id={file_id}"
+url = f"https://drive.google.com/uc?export=download&id={file_id}"
 df = pd.read_csv(url)
 
 # Clean price column
