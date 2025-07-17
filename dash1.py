@@ -1,22 +1,44 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import requests
 
 st.title("Airbnb Listings Dashboard")
 
-# Load data
+# Load data from Google Drive
 file_id = "1lBYjeUP4yzAhEed0efY2I50KFnpkRkiR"
 url = f"https://drive.google.com/uc?export=download&id={file_id}"
-df = pd.read_csv(url)
+
+# Try reading the CSV with error handling
+try:
+    df = pd.read_csv(url, encoding='utf-8', on_bad_lines='skip')
+except Exception as e:
+    st.error(f"Failed to load data: {e}")
+    st.stop()
+
+# Optional: Clean column names to lowercase and underscores
+df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+
+# Check if 'price' column exists
+if 'price' not in df.columns:
+    st.error("❌ 'price' column not found in the dataset. Please check the column names above.")
+    st.stop()
 
 # Clean price column
 df['price_clean'] = df['price'].str.replace("[$,]", "", regex=True).astype(float)
 
 # Sidebar filters
-neighborhood = st.sidebar.selectbox("Select Neighborhood", df['neighbourhood_cleansed'].dropna().unique())
-room_type = st.sidebar.selectbox("Select Room Type", df['room_type'].dropna().unique())
-price_range = st.sidebar.slider("Price Range", 0, int(df['price'].str.replace("[$,]", "", regex=True).astype(float).max()), (50, 300))
+neighborhoods = df['neighbourhood_cleansed'].dropna().unique()
+room_types = df['room_type'].dropna().unique()
 
+neighborhood = st.sidebar.selectbox("Select Neighborhood", neighborhoods)
+room_type = st.sidebar.selectbox("Select Room Type", room_types)
+price_range = st.sidebar.slider(
+    "Price Range",
+    0,
+    int(df['price_clean'].max()),
+    (50, 300)
+)
 
 # Filtered data
 filtered = df[
@@ -41,8 +63,9 @@ scatter = alt.Chart(filtered).mark_circle(size=60).encode(
 ).interactive().properties(title="Availability vs Estimated Revenue")
 
 # Chart 3: Review Scores Over Time
-filtered['first_review'] = pd.to_datetime(filtered['first_review'])
-line = alt.Chart(filtered).mark_line().encode(
+filtered = filtered.copy()
+filtered['first_review'] = pd.to_datetime(filtered['first_review'], errors='coerce')
+line = alt.Chart(filtered.dropna(subset=['first_review'])).mark_line().encode(
     x='first_review:T',
     y='review_scores_rating',
     color='room_type'
